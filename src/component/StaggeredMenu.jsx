@@ -40,6 +40,7 @@ export const StaggeredMenu = ({
   const colorTweenRef = useRef(null)
   const toggleBtnRef = useRef(null)
   const busyRef = useRef(false)
+  const reduceMotionRef = useRef(false)
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -70,6 +71,24 @@ export const StaggeredMenu = ({
     })
     return () => ctx.revert()
   }, [menuButtonColor, position])
+
+  React.useEffect(() => {
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const syncPreference = () => {
+      reduceMotionRef.current = preference.matches
+    }
+    syncPreference()
+    preference.addEventListener('change', syncPreference)
+    return () => preference.removeEventListener('change', syncPreference)
+  }, [])
+
+  React.useEffect(() => () => {
+    openTlRef.current?.kill()
+    closeTweenRef.current?.kill()
+    spinTweenRef.current?.kill()
+    textCycleAnimRef.current?.kill()
+    colorTweenRef.current?.kill()
+  }, [])
 
   const buildOpenTimeline = useCallback(() => {
     const panel = panelRef.current
@@ -131,6 +150,18 @@ export const StaggeredMenu = ({
   const playOpen = useCallback(() => {
     if (busyRef.current) return
     busyRef.current = true
+    if (reduceMotionRef.current) {
+      const panel = panelRef.current
+      if (panel) gsap.set([panel, ...preLayerElsRef.current], { xPercent: 0, opacity: 1 })
+      if (panel) {
+        gsap.set(Array.from(panel.querySelectorAll('.sm-panel-itemLabel')), { yPercent: 0, rotate: 0 })
+        gsap.set(Array.from(panel.querySelectorAll('.sm-panel-list[data-numbering] .sm-panel-item')), { '--sm-num-opacity': 1 })
+        gsap.set(panel.querySelector('.sm-socials-title'), { opacity: 1 })
+        gsap.set(Array.from(panel.querySelectorAll('.sm-socials-link')), { y: 0, opacity: 1 })
+      }
+      busyRef.current = false
+      return
+    }
     const tl = buildOpenTimeline()
     if (tl) {
       tl.eventCallback('onComplete', () => {
@@ -153,6 +184,11 @@ export const StaggeredMenu = ({
     const all = [...layers, panel]
     closeTweenRef.current?.kill()
     const offscreen = position === 'left' ? -100 : 100
+    if (reduceMotionRef.current) {
+      gsap.set(all, { xPercent: offscreen })
+      busyRef.current = false
+      return
+    }
     closeTweenRef.current = gsap.to(all, {
       xPercent: offscreen,
       duration: 0.32,
@@ -176,6 +212,10 @@ export const StaggeredMenu = ({
     const icon = iconRef.current
     if (!icon) return
     spinTweenRef.current?.kill()
+    if (reduceMotionRef.current) {
+      gsap.set(icon, { rotate: opening ? 225 : 0 })
+      return
+    }
     if (opening) {
       spinTweenRef.current = gsap.to(icon, { rotate: 225, duration: 0.8, ease: 'power4.out', overwrite: 'auto' })
     } else {
@@ -189,6 +229,10 @@ export const StaggeredMenu = ({
     colorTweenRef.current?.kill()
     if (changeMenuColorOnOpen) {
       const targetColor = opening ? openMenuButtonColor : menuButtonColor
+      if (reduceMotionRef.current) {
+        gsap.set(btn, { color: targetColor })
+        return
+      }
       colorTweenRef.current = gsap.to(btn, { color: targetColor, delay: 0.18, duration: 0.3, ease: 'power2.out' })
     } else {
       gsap.set(btn, { color: menuButtonColor })
@@ -213,6 +257,11 @@ export const StaggeredMenu = ({
 
     const currentLabel = opening ? 'Menu' : 'Close'
     const targetLabel = opening ? 'Close' : 'Menu'
+    if (reduceMotionRef.current) {
+      setTextLines([targetLabel])
+      gsap.set(inner, { yPercent: 0 })
+      return
+    }
     const cycles = 3
     const seq = [currentLabel]
     let last = currentLabel

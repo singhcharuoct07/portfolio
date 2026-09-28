@@ -46,7 +46,6 @@
   display: block;
   transform: rotate(15deg);
   transform-origin: 100% 100%;
-  will-change: transform;
 }
 
 .icon-btn__front {
@@ -57,7 +56,6 @@
   -moz-backdrop-filter: blur(0.75em);
   display: flex;
   transform-origin: 80% 50%;
-  will-change: transform;
 }
 
 .icon-btn__icon {
@@ -85,11 +83,13 @@
 
 .icon-btn:focus-visible .icon-btn__back,
 .icon-btn:hover .icon-btn__back {
+  will-change: transform;
   transform: rotate(25deg) translate3d(-0.5em, -0.5em, 0.5em);
 }
 
 .icon-btn:focus-visible .icon-btn__front,
 .icon-btn:hover .icon-btn__front {
+  will-change: transform;
   transform: translate3d(0, 0, 2em);
 }
 
@@ -102,5 +102,21 @@
 @media (min-width: 768px) {
   .icon-btns {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 639px) {
+  .icon-btn__front {
+    backdrop-filter: blur(0.35em);
+    -webkit-backdrop-filter: blur(0.35em);
+    -moz-backdrop-filter: blur(0.35em);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn__back,
+  .icon-btn__front,
+  .icon-btn__label {
+    transition: none;
   }
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Matter from 'matter-js'
 import './FolderFloat.css'
 
@@ -87,6 +87,7 @@ export default function FolderFloat({
   const [popped, setPopped] = useState(-1)
   const [live, setLive] = useState(false)
   const [sizes, setSizes] = useState([])
+  const folderRef = useRef(null)
   const anchorRef = useRef(null)
   const pillRefs = useRef([])
   const world = useRef({
@@ -98,14 +99,21 @@ export default function FolderFloat({
     t0: 0,
     drag: null,
     zone: null,
-    live: false
+    live: false,
+    visible: false,
+    tick: null
   })
   const latest = useRef({})
-  latest.current = { onSelect, onOpenChange, drift, reduce: false }
   const popTimer = useRef(undefined)
   const liveTimer = useRef(undefined)
 
-  const list = items.map(item => {
+  useEffect(() => {
+    latest.current.onSelect = onSelect
+    latest.current.onOpenChange = onOpenChange
+    latest.current.drift = drift
+  }, [onSelect, onOpenChange, drift])
+
+  const list = useMemo(() => items.map(item => {
     if (typeof item === 'string') {
       return { label: item, value: item, href: undefined, target: undefined, rel: undefined }
     }
@@ -117,10 +125,10 @@ export default function FolderFloat({
       target: item.target,
       rel: item.rel
     }
-  })
+  }), [items])
   const n = list.length
   const sub = sublabel || `${n} ${n === 1 ? 'note' : 'notes'}`
-  const pos = layout(list, spread, lift, tilt, sizes)
+  const pos = useMemo(() => layout(list, spread, lift, tilt, sizes), [list, spread, lift, tilt, sizes])
 
   const labelsKey = list.map(item => item.label).join('|')
 
@@ -139,6 +147,7 @@ export default function FolderFloat({
 
   const stopPhysics = useCallback(() => {
     const w = world.current
+    const wasLive = w.live
     clearTimeout(liveTimer.current)
     cancelAnimationFrame(w.raf)
     w.raf = 0
@@ -159,12 +168,13 @@ export default function FolderFloat({
     w.bodies = []
     w.drag = null
     w.live = false
-    setLive(false)
+    w.tick = null
+    if (wasLive) setLive(false)
   }, [])
 
   const startPhysics = useCallback(() => {
     const w = world.current
-    if (w.engine) return
+    if (w.engine || latest.current.reduce) return
 
     const els = pillRefs.current.slice(0, n)
     if (els.some(el => !el)) return
@@ -207,12 +217,17 @@ export default function FolderFloat({
     Composite.add(engine.world, [...w.bodies, ...walls])
     w.live = true
     w.last = 0
-    w.t0 = performance.now()
+    w.t0 = 0
     setLive(true)
 
     const tick = now => {
       const s = world.current
       if (!s.engine) return
+      if (!s.visible || document.hidden) {
+        s.raf = 0
+        return
+      }
+      if (!s.t0) s.t0 = now
       const dt = s.last ? Math.min(32, now - s.last) : 16
       s.last = now
       const t = (now - s.t0) / 1000
@@ -238,8 +253,9 @@ export default function FolderFloat({
       s.raf = requestAnimationFrame(tick)
     }
 
-    w.raf = requestAnimationFrame(tick)
-  }, [n, spread, lift, pos.map(p => `${p.x},${p.y}`).join('|')])
+    w.tick = tick
+    if (w.visible && !document.hidden) w.raf = requestAnimationFrame(tick)
+  }, [n, spread, lift, pos])
 
   const set = useCallback(
     next => {
@@ -269,10 +285,50 @@ export default function FolderFloat({
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
     const sync = () => {
       latest.current.reduce = mq.matches
+      if (mq.matches) stopPhysics()
+    }
+    const handleChange = () => {
+      sync()
+      if (!mq.matches && open && physics) startPhysics()
     }
     sync()
-    mq.addEventListener('change', sync)
-    return () => mq.removeEventListener('change', sync)
+    mq.addEventListener('change', handleChange)
+    return () => mq.removeEventListener('change', handleChange)
+  }, [open, physics, startPhysics, stopPhysics])
+
+  useEffect(() => {
+    let isInView = false
+    const state = world.current
+    const syncVisibility = () => {
+      const w = state
+      w.visible = isInView && !document.hidden
+      if (w.visible && w.engine && w.tick && !w.raf) {
+        w.last = 0
+        w.raf = requestAnimationFrame(w.tick)
+      } else if (!w.visible && w.raf) {
+        cancelAnimationFrame(w.raf)
+        w.raf = 0
+      }
+    }
+
+    const observer = 'IntersectionObserver' in window
+      ? new IntersectionObserver(([entry]) => {
+          isInView = entry.isIntersecting
+          syncVisibility()
+        })
+      : null
+    if (observer && folderRef.current) observer.observe(folderRef.current)
+    else isInView = true
+    syncVisibility()
+
+    document.addEventListener('visibilitychange', syncVisibility)
+    return () => {
+      observer?.disconnect()
+      document.removeEventListener('visibilitychange', syncVisibility)
+      if (state.raf) cancelAnimationFrame(state.raf)
+      state.raf = 0
+      state.visible = false
+    }
   }, [])
 
   useEffect(
@@ -291,7 +347,7 @@ export default function FolderFloat({
       if (target === '_blank') {
         window.open(item.href, target, 'noopener,noreferrer')
       } else {
-        window.location.href = item.href
+        window.location.assign(item.href)
       }
     }
 
@@ -324,7 +380,9 @@ export default function FolderFloat({
 
     try {
       e.currentTarget.setPointerCapture(e.pointerId)
-    } catch {}
+    } catch {
+      // Pointer capture may be unavailable in embedded contexts.
+    }
   }
 
   const move = (e, i) => {
@@ -357,7 +415,9 @@ export default function FolderFloat({
 
     try {
       e.currentTarget.releasePointerCapture(e.pointerId)
-    } catch {}
+    } catch {
+      // The pointer may already have been released by the browser.
+    }
 
     if (!d.moved && e.type === 'pointerup') pick(item, i)
   }
@@ -366,6 +426,7 @@ export default function FolderFloat({
 
   return (
     <div
+      ref={folderRef}
       className={`folder-float${className ? ` ${className}` : ''}`}
       data-open={open ? '' : undefined}
       data-live={live ? '' : undefined}

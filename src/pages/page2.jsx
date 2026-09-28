@@ -1,14 +1,6 @@
 import { motion } from 'motion/react'
 import ShinyText from '../component/ShinyText'
 
-const highlights = [
-  { label: 'Projects', value: '12+' },
-  { label: 'Experience', value: '2+ yrs' },
-  { label: 'Focus', value: 'Full Stack' },
-]
-
-
-
 const Page2 = () => {
   return (
     <div id='about' className='min-h-screen bg-[#0f1115] px-5 py-16 text-white'>
@@ -63,8 +55,8 @@ const Page2 = () => {
             transition={{ duration: 0.7, ease: 'easeOut' }}
             className='relative'
           >
-            <div className='absolute -left-10 top-10 h-32 w-32 rounded-full bg-[#d9f7b0]/20 blur-3xl' />
-            <div className='absolute -right-8 bottom-8 h-28 w-28 rounded-full bg-[#4ecdc4]/15 blur-3xl' />
+            <div className='absolute -left-4 top-10 h-32 w-32 rounded-full bg-[#d9f7b0]/20 blur-3xl' />
+            <div className='absolute -right-4 bottom-8 h-28 w-28 rounded-full bg-[#4ecdc4]/15 blur-3xl' />
 
             <div className='relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#1b1f2a] via-[#111827] to-[#0b1220] p-6 shadow-[0_30px_60px_rgba(0,0,0,0.35)]'>
               <div className='rounded-[1.5rem] border border-white/10 bg-[#f2efe8] p-5 text-black shadow-inner backdrop-blur-sm'>

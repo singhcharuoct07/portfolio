@@ -1,9 +1,16 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Renderer, Camera, Geometry, Program, Mesh } from 'ogl';
 
 import './Particles.css';
 
 const defaultColors = ['#ffffff', '#ffffff', '#ffffff'];
+
+const getParticleLimit = () => {
+  if (typeof window === 'undefined') return 150;
+  if (window.innerWidth < 640) return 48;
+  if (window.innerWidth < 1024) return 96;
+  return 150;
+};
 
 const hexToRgb = hex => {
   hex = hex.replace(/^#/, '');
@@ -102,13 +109,33 @@ const Particles = ({
 }) => {
   const containerRef = useRef(null);
   const mouseRef = useRef({ x: 0, y: 0 });
+  const [particleLimit, setParticleLimit] = useState(getParticleLimit);
+  const responsiveParticleCount = Math.min(particleCount, particleLimit);
+
+  useEffect(() => {
+    const mobile = window.matchMedia('(max-width: 639px)');
+    const tablet = window.matchMedia('(min-width: 640px) and (max-width: 1023px)');
+    const updateLimit = () => setParticleLimit(mobile.matches ? 48 : tablet.matches ? 96 : 150);
+
+    mobile.addEventListener('change', updateLimit);
+    tablet.addEventListener('change', updateLimit);
+    return () => {
+      mobile.removeEventListener('change', updateLimit);
+      tablet.removeEventListener('change', updateLimit);
+    };
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    const effectivePixelRatio = Math.min(pixelRatio, 1.5, window.devicePixelRatio || 1);
+    const allowHoverMotion = moveParticlesOnHover && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let reduceMotion = motionPreference.matches;
+
     const renderer = new Renderer({
-      dpr: pixelRatio,
+      dpr: effectivePixelRatio,
       depth: false,
       alpha: true,
     });
@@ -118,15 +145,23 @@ const Particles = ({
 
     const camera = new Camera(gl, { fov: 15 });
     camera.position.set(0, 0, cameraDistance);
+    let particles = null;
 
+    let previousWidth = 0;
+    let previousHeight = 0;
     const resize = () => {
       const width = container.clientWidth;
       const height = container.clientHeight;
+      if (!width || !height || (width === previousWidth && height === previousHeight)) return;
+      previousWidth = width;
+      previousHeight = height;
       renderer.setSize(width, height);
-      camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+      camera.perspective({ aspect: width / height });
+      if (reduceMotion && particles) renderer.render({ scene: particles, camera });
     };
 
-    window.addEventListener('resize', resize, false);
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(container);
     resize();
 
     const handleMouseMove = e => {
@@ -136,11 +171,11 @@ const Particles = ({
       mouseRef.current = { x, y };
     };
 
-    if (moveParticlesOnHover) {
+    if (allowHoverMotion) {
       container.addEventListener('mousemove', handleMouseMove);
     }
 
-    const count = particleCount;
+    const count = responsiveParticleCount;
     const positions = new Float32Array(count * 3);
     const randoms = new Float32Array(count * 4);
     const colors = new Float32Array(count * 3);
@@ -173,7 +208,7 @@ const Particles = ({
       uniforms: {
         uTime: { value: 0 },
         uSpread: { value: particleSpread },
-        uBaseSize: { value: particleBaseSize * pixelRatio },
+        uBaseSize: { value: particleBaseSize * effectivePixelRatio },
         uSizeRandomness: { value: sizeRandomness },
         uAlphaParticles: { value: alphaParticles ? 1 : 0 },
       },
@@ -181,23 +216,42 @@ const Particles = ({
       depthTest: false,
     });
 
-    const particles = new Mesh(gl, { mode: gl.POINTS, geometry, program });
+    particles = new Mesh(gl, { mode: gl.POINTS, geometry, program });
 
-    let animationFrameId;
+    let animationFrameId = null;
     let lastTime = performance.now();
     let elapsed = 0;
+    let isInView = false;
+    let isPageVisible = !document.hidden;
+
+    const stopAnimation = () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    };
+
+    const startAnimation = () => {
+      if (animationFrameId !== null || !isInView || !isPageVisible || reduceMotion) return;
+      lastTime = performance.now();
+      animationFrameId = requestAnimationFrame(update);
+    };
 
     const update = t => {
-      animationFrameId = requestAnimationFrame(update);
-      const delta = t - lastTime;
+      animationFrameId = null;
+      if (!isInView || !isPageVisible || reduceMotion) return;
+      const delta = Math.min(Math.max(t - lastTime, 0), 32);
       lastTime = t;
       elapsed += delta * speed;
 
       program.uniforms.uTime.value = elapsed * 0.001;
 
-      if (moveParticlesOnHover) {
-        particles.position.x = -mouseRef.current.x * particleHoverFactor;
-        particles.position.y = -mouseRef.current.y * particleHoverFactor;
+      if (allowHoverMotion) {
+        const easing = 1 - Math.exp(-delta * 0.012);
+        const targetX = -mouseRef.current.x * particleHoverFactor;
+        const targetY = -mouseRef.current.y * particleHoverFactor;
+        particles.position.x += (targetX - particles.position.x) * easing;
+        particles.position.y += (targetY - particles.position.y) * easing;
       } else {
         particles.position.x = 0;
         particles.position.y = 0;
@@ -206,27 +260,55 @@ const Particles = ({
       if (!disableRotation) {
         particles.rotation.x = Math.sin(elapsed * 0.0002) * 0.1;
         particles.rotation.y = Math.cos(elapsed * 0.0005) * 0.15;
-        particles.rotation.z += 0.01 * speed;
+        particles.rotation.z += delta * 0.0006 * speed;
       }
 
       renderer.render({ scene: particles, camera });
+      animationFrameId = requestAnimationFrame(update);
     };
 
-    animationFrameId = requestAnimationFrame(update);
+    const observer = new IntersectionObserver(([entry]) => {
+      isInView = entry.isIntersecting;
+      if (isInView && reduceMotion) renderer.render({ scene: particles, camera });
+      else if (isInView) startAnimation();
+      else stopAnimation();
+    });
+    observer.observe(container);
+
+    const handleMotionPreferenceChange = event => {
+      reduceMotion = event.matches;
+      if (reduceMotion) {
+        stopAnimation();
+        if (isInView && isPageVisible) renderer.render({ scene: particles, camera });
+      } else {
+        startAnimation();
+      }
+    };
+    motionPreference.addEventListener('change', handleMotionPreferenceChange);
+
+    const handleVisibilityChange = () => {
+      isPageVisible = !document.hidden;
+      if (isPageVisible) startAnimation();
+      else stopAnimation();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('resize', resize);
-      if (moveParticlesOnHover) {
+      resizeObserver.disconnect();
+      motionPreference.removeEventListener('change', handleMotionPreferenceChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      observer.disconnect();
+      if (allowHoverMotion) {
         container.removeEventListener('mousemove', handleMouseMove);
       }
-      cancelAnimationFrame(animationFrameId);
+      stopAnimation();
       if (container.contains(gl.canvas)) {
         container.removeChild(gl.canvas);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    particleCount,
+    responsiveParticleCount,
     particleSpread,
     speed,
     moveParticlesOnHover,

@@ -2,29 +2,16 @@ import { forwardRef, useMemo, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import './VariableProximity.css';
 
-function useAnimationFrame(callback) {
-  useEffect(() => {
-    let frameId;
-    const loop = () => {
-      callback();
-      frameId = requestAnimationFrame(loop);
-    };
-    frameId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frameId);
-  }, [callback]);
-}
-
 function useMousePositionRef(containerRef) {
   const positionRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
+    const container = containerRef?.current;
+    if (!container) return undefined;
+
     const updatePosition = (x, y) => {
-      if (containerRef?.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        positionRef.current = { x: x - rect.left, y: y - rect.top };
-      } else {
-        positionRef.current = { x, y };
-      }
+      const rect = container.getBoundingClientRect();
+      positionRef.current = { x: x - rect.left, y: y - rect.top };
     };
 
     const handleMouseMove = ev => updatePosition(ev.clientX, ev.clientY);
@@ -33,11 +20,11 @@ function useMousePositionRef(containerRef) {
       updatePosition(touch.clientX, touch.clientY);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('touchmove', handleTouchMove);
+    container.addEventListener('pointermove', handleMouseMove);
+    container.addEventListener('touchmove', handleTouchMove, { passive: true });
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('pointermove', handleMouseMove);
+      container.removeEventListener('touchmove', handleTouchMove);
     };
   }, [containerRef]);
 
@@ -59,7 +46,6 @@ const VariableProximity = forwardRef((props, ref) => {
   } = props;
 
   const letterRefs = useRef([]);
-  const interpolatedSettingsRef = useRef([]);
   const mousePositionRef = useMousePositionRef(containerRef);
   const lastPositionRef = useRef({ x: null, y: null });
 
@@ -85,61 +71,74 @@ const VariableProximity = forwardRef((props, ref) => {
     }));
   }, [fromFontVariationSettings, toFontVariationSettings]);
 
-  const calculateDistance = (x1, y1, x2, y2) => Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+  useEffect(() => {
+    const container = containerRef?.current;
+    if (!container) return undefined;
 
-  const calculateFalloff = distance => {
-    const norm = Math.min(Math.max(1 - distance / radius, 0), 1);
-    switch (falloff) {
-      case 'exponential':
-        return norm ** 2;
-      case 'gaussian':
-        return Math.exp(-((distance / (radius / 2)) ** 2) / 2);
-      case 'linear':
-      default:
-        return norm;
-    }
-  };
+    let frameId = null;
 
-  useAnimationFrame(() => {
-    if (!containerRef?.current) return;
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const { x, y } = mousePositionRef.current;
-    if (lastPositionRef.current.x === x && lastPositionRef.current.y === y) {
-      return;
-    }
-    lastPositionRef.current = { x, y };
+    const update = () => {
+      frameId = null;
+      const container = containerRef?.current;
+      if (!container) return;
 
-    letterRefs.current.forEach((letterRef, index) => {
-      if (!letterRef) return;
+      const containerRect = container.getBoundingClientRect();
+      const { x, y } = mousePositionRef.current;
+      if (lastPositionRef.current.x === x && lastPositionRef.current.y === y) return;
+      lastPositionRef.current = { x, y };
 
-      const rect = letterRef.getBoundingClientRect();
-      const letterCenterX = rect.left + rect.width / 2 - containerRect.left;
-      const letterCenterY = rect.top + rect.height / 2 - containerRect.top;
+      letterRefs.current.forEach(letterRef => {
+        if (!letterRef) return;
 
-      const distance = calculateDistance(
-        mousePositionRef.current.x,
-        mousePositionRef.current.y,
-        letterCenterX,
-        letterCenterY
-      );
+        const rect = letterRef.getBoundingClientRect();
+        const letterCenterX = rect.left + rect.width / 2 - containerRect.left;
+        const letterCenterY = rect.top + rect.height / 2 - containerRect.top;
+        const distance = Math.sqrt((x - letterCenterX) ** 2 + (y - letterCenterY) ** 2);
 
-      if (distance >= radius) {
-        letterRef.style.fontVariationSettings = fromFontVariationSettings;
-        return;
-      }
+        if (distance >= radius) {
+          letterRef.style.fontVariationSettings = fromFontVariationSettings;
+          return;
+        }
 
-      const falloffValue = calculateFalloff(distance);
-      const newSettings = parsedSettings
-        .map(({ axis, fromValue, toValue }) => {
-          const interpolatedValue = fromValue + (toValue - fromValue) * falloffValue;
-          return `'${axis}' ${interpolatedValue}`;
-        })
-        .join(', ');
+        const norm = Math.min(Math.max(1 - distance / radius, 0), 1);
+        const falloffValue = falloff === 'exponential'
+          ? norm ** 2
+          : falloff === 'gaussian'
+            ? Math.exp(-((distance / (radius / 2)) ** 2) / 2)
+            : norm;
+        const newSettings = parsedSettings
+          .map(({ axis, fromValue, toValue }) => {
+            const interpolatedValue = fromValue + (toValue - fromValue) * falloffValue;
+            return `'${axis}' ${interpolatedValue}`;
+          })
+          .join(', ');
 
-      interpolatedSettingsRef.current[index] = newSettings;
-      letterRef.style.fontVariationSettings = newSettings;
-    });
-  });
+        letterRef.style.fontVariationSettings = newSettings;
+      });
+    };
+
+    const scheduleUpdate = () => {
+      if (frameId === null) frameId = requestAnimationFrame(update);
+    };
+
+    const resetLetters = () => {
+      lastPositionRef.current = { x: null, y: null };
+      letterRefs.current.forEach(letterRef => {
+        if (letterRef) letterRef.style.fontVariationSettings = fromFontVariationSettings;
+      });
+    };
+
+    scheduleUpdate();
+    container.addEventListener('pointermove', scheduleUpdate);
+    container.addEventListener('touchmove', scheduleUpdate, { passive: true });
+    container.addEventListener('pointerleave', resetLetters);
+    return () => {
+      container.removeEventListener('pointermove', scheduleUpdate);
+      container.removeEventListener('touchmove', scheduleUpdate);
+      container.removeEventListener('pointerleave', resetLetters);
+      if (frameId !== null) cancelAnimationFrame(frameId);
+    };
+  }, [containerRef, falloff, fromFontVariationSettings, mousePositionRef, parsedSettings, radius]);
 
   const words = label.split(' ');
   let letterIndex = 0;
@@ -162,9 +161,9 @@ const VariableProximity = forwardRef((props, ref) => {
                 ref={el => {
                   letterRefs.current[currentLetterIndex] = el;
                 }}
+                className='variable-proximity__letter'
                 style={{
                   display: 'inline-block',
-                  fontVariationSettings: interpolatedSettingsRef.current[currentLetterIndex],
                 }}
                 aria-hidden="true"
               >

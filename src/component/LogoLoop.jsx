@@ -56,7 +56,7 @@ const useImageLoader = (seqRef, onLoad, dependencies) => {
   }, [onLoad, seqRef, dependencies]);
 };
 
-const useAnimationLoop = (trackRef, targetVelocity, seqWidth, seqHeight, isHovered, hoverSpeed, isVertical) => {
+const useAnimationLoop = (trackRef, containerRef, targetVelocity, seqWidth, seqHeight, isHovered, hoverSpeed, isVertical) => {
   const rafRef = useRef(null);
   const lastTimestampRef = useRef(null);
   const offsetRef = useRef(0);
@@ -76,7 +76,15 @@ const useAnimationLoop = (trackRef, targetVelocity, seqWidth, seqHeight, isHover
       track.style.transform = transformValue;
     }
 
+    let isInView = false;
+    let isPageVisible = !document.hidden;
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let reduceMotion = motionPreference.matches;
+
     const animate = timestamp => {
+      rafRef.current = null;
+      if (!isInView || !isPageVisible) return;
+
       if (lastTimestampRef.current === null) {
         lastTimestampRef.current = timestamp;
       }
@@ -103,16 +111,47 @@ const useAnimationLoop = (trackRef, targetVelocity, seqWidth, seqHeight, isHover
       rafRef.current = requestAnimationFrame(animate);
     };
 
-    rafRef.current = requestAnimationFrame(animate);
+    const startAnimation = () => {
+      if (rafRef.current !== null || !isInView || !isPageVisible || reduceMotion) return;
+      lastTimestampRef.current = null;
+      rafRef.current = requestAnimationFrame(animate);
+    };
 
-    return () => {
+    const stopAnimation = () => {
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
       lastTimestampRef.current = null;
     };
-  }, [targetVelocity, seqWidth, seqHeight, isHovered, hoverSpeed, isVertical, trackRef]);
+
+    const observer = new IntersectionObserver(([entry]) => {
+      isInView = entry.isIntersecting;
+      if (isInView) startAnimation();
+      else stopAnimation();
+    });
+    if (containerRef.current) observer.observe(containerRef.current);
+
+    const handleVisibilityChange = () => {
+      isPageVisible = !document.hidden;
+      if (isPageVisible) startAnimation();
+      else stopAnimation();
+    };
+    const handleMotionPreferenceChange = event => {
+      reduceMotion = event.matches;
+      if (reduceMotion) stopAnimation();
+      else startAnimation();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    motionPreference.addEventListener('change', handleMotionPreferenceChange);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      motionPreference.removeEventListener('change', handleMotionPreferenceChange);
+      stopAnimation();
+    };
+  }, [targetVelocity, seqWidth, seqHeight, isHovered, hoverSpeed, isVertical, trackRef, containerRef]);
 };
 
 export const LogoLoop = memo(
@@ -192,7 +231,7 @@ export const LogoLoop = memo(
 
     useImageLoader(seqRef, updateDimensions, [logos, gap, logoHeight, isVertical]);
 
-    useAnimationLoop(trackRef, targetVelocity, seqWidth, seqHeight, isHovered, effectiveHoverSpeed, isVertical);
+    useAnimationLoop(trackRef, containerRef, targetVelocity, seqWidth, seqHeight, isHovered, effectiveHoverSpeed, isVertical);
 
     const cssVariables = useMemo(
       () => ({

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 
 import './ScrollExpand.css';
 
@@ -43,19 +43,21 @@ const ScrollExpand = ({
   const hintRef = useRef(null);
 
   const propsRef = useRef({});
-  propsRef.current = {
-    startWidth,
-    startHeight,
-    startRadius,
-    endRadius,
-    mediaZoom,
-    scrollDistance,
-    holdDistance,
-    smoothing,
-    overlayScrim,
-    useWindowScroll,
-    enabled,
-  };
+  useLayoutEffect(() => {
+    propsRef.current = {
+      startWidth,
+      startHeight,
+      startRadius,
+      endRadius,
+      mediaZoom,
+      scrollDistance,
+      holdDistance,
+      smoothing,
+      overlayScrim,
+      useWindowScroll,
+      enabled,
+    };
+  }, [startWidth, startHeight, startRadius, endRadius, mediaZoom, scrollDistance, holdDistance, smoothing, overlayScrim, useWindowScroll, enabled]);
 
   const applyProgress = useCallback(p => {
     const frame = frameRef.current;
@@ -108,6 +110,8 @@ const ScrollExpand = ({
     let target = 0;
     let stageH = 0;
     let running = false;
+    let isInView = false;
+    let isPageVisible = !document.hidden;
 
     const measure = () => {
       const c = propsRef.current;
@@ -150,6 +154,7 @@ const ScrollExpand = ({
     };
 
     const onScroll = () => {
+      if (!isInView || !isPageVisible) return;
       target = readProgress();
       if (propsRef.current.smoothing <= 0 || reduceMotion) {
         current = target;
@@ -161,9 +166,32 @@ const ScrollExpand = ({
 
     const onResize = () => {
       measure();
+      if (!isInView || !isPageVisible) return;
       target = readProgress();
       current = target;
       applyProgress(current);
+    };
+
+    const stopAnimation = () => {
+      running = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    };
+
+    const observer = 'IntersectionObserver' in window
+      ? new IntersectionObserver(([entry]) => {
+          isInView = entry.isIntersecting;
+          if (isInView) onScroll();
+          else stopAnimation();
+        })
+      : null;
+    if (observer) observer.observe(root);
+    else isInView = true;
+
+    const handleVisibilityChange = () => {
+      isPageVisible = !document.hidden;
+      if (isPageVisible && isInView) onScroll();
+      else stopAnimation();
     };
 
     measure();
@@ -174,6 +202,7 @@ const ScrollExpand = ({
     const scroller = useWindowScroll ? window : root;
     scroller.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     const ro = new ResizeObserver(onResize);
     ro.observe(root);
 
@@ -181,6 +210,8 @@ const ScrollExpand = ({
       if (raf) cancelAnimationFrame(raf);
       scroller.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      observer?.disconnect();
       ro.disconnect();
     };
   }, [applyProgress, useWindowScroll]);

@@ -3,7 +3,7 @@ import Header from '../component/Header'
 import VariableProximity from '../component/VariableProximity'
 import Particles from '../component/Particles'
 
-const page1 = () => {
+const Page1 = () => {
   const containerRef = useRef(null)
 
   return (
@@ -26,7 +26,7 @@ const page1 = () => {
         <div className='absolute inset-0 bg-black/20' />
         <Header />
 
-        <div className='absolute bottom-20 left-20 z-10 w-[min(90%,11000px)]'>
+        <div className='absolute bottom-16 left-4 right-4 z-10 w-auto sm:bottom-20 sm:left-8 sm:right-auto sm:w-[min(90%,11000px)] md:left-20'>
           <div className='text-3xl font-black tracking-tight text-white md:text-5xl'>Hi, I am</div>
 
           <div className='mt-2 text-[clamp(3rem,6vw,8rem)] leading-[0.9] tracking-[-0.08em] text-white'>
@@ -51,4 +51,4 @@ const page1 = () => {
   )
 }
 
-export default page1
+export default Page1

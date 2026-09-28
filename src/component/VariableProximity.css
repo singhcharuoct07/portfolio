@@ -4,6 +4,16 @@
   font-family: 'Roboto Flex', sans-serif;
 }
 
+.variable-proximity__letter {
+  transition: font-variation-settings 100ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .variable-proximity__letter {
+    transition: none;
+  }
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

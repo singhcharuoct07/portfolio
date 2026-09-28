@@ -93,7 +93,7 @@ const Page3 = () => {
           bounce={0.3}
         />
 
-        <div >
+        <div className='w-full min-w-0 max-w-full'>
           <LogoLoop
             logos={techLogos}
             speed={100}

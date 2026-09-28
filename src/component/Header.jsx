@@ -5,7 +5,7 @@ const Header = () => {
     { label: 'Home', ariaLabel: 'Go to home section', link: '#home' },
     { label: 'About', ariaLabel: 'Go to about section', link: '#about' },
     { label: 'Project', ariaLabel: 'Go to projects section', link: '#project' },
-    { label: 'Resume', ariaLabel: 'Open resume', link: '/resume.html', target: '_blank', rel: 'noreferrer' },
+    { label: 'Resume', ariaLabel: 'Open resume', link: '/resume11 (1).pdf', target: '_blank', rel: 'noreferrer' },
     { label: 'Contact', ariaLabel: 'Go to contact section', link: '#contact' }
   ]
 

@@ -22,7 +22,7 @@
 
   position: relative;
   display: inline-block;
-  width: var(--ff-w);
+  width: min(var(--ff-w), calc(100vw - 64px));
   padding-top: var(--ff-tab);
   font-family: inherit;
   font-size: 13px;
@@ -32,7 +32,7 @@
 
 .folder-float__folder {
   position: relative;
-  width: var(--ff-w);
+  width: min(var(--ff-w), calc(100vw - 64px));
   height: var(--ff-h);
 }
 
@@ -143,9 +143,10 @@
   content: '';
   position: absolute;
   top: calc(-1 * (var(--ff-lift) + 120px));
-  left: calc(-1 * (var(--ff-spread) + 100px));
-  width: calc(2 * var(--ff-spread) + 200px);
+  left: 50%;
+  width: min(calc(2 * var(--ff-spread) + 200px), calc(100vw - 24px));
   height: calc(var(--ff-lift) + 120px);
+  transform: translateX(-50%);
 }
 
 .folder-float__item {

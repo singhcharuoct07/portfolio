@@ -66,8 +66,7 @@ const Page4 = () => {
             position: 'absolute',
             left: '50%',
             top: '50%',
-            transform: 'translate(-50%, -50%)',
-            filter: 'drop-shadow(0 0 18px rgba(96,165,250,0.30))'
+            transform: 'translate(-50%, -50%)'
           }}
         />
       </div>
@@ -79,7 +78,7 @@ const Page4 = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.35 }}
           transition={{ duration: 0.7, ease: 'easeOut' }}
-          className='w-full rounded-[2rem] border border-white/10 bg-slate-950/30 p-6 shadow-[0_30px_100px_rgba(15,23,42,0.55)] backdrop-blur-xl md:p-10'
+          className='w-full rounded-[2rem] border border-white/10 bg-slate-950/30 p-6 shadow-[0_30px_100px_rgba(15,23,42,0.55)] backdrop-blur-md md:backdrop-blur-xl md:p-10'
         >
           <div className='text-center'>
             <motion.p

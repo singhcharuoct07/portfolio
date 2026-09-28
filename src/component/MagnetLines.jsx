@@ -18,33 +18,73 @@ export default function MagnetLines({
     const container = containerRef.current
     if (!container) return
 
-    const items = container.querySelectorAll('span')
+    const items = Array.from(container.querySelectorAll('span'))
+    let centers = []
+    let pointer = null
+    let frameId = null
+    let isActive = false
 
-    const onPointerMove = pointer => {
-      items.forEach(item => {
+    const updateCenters = () => {
+      const containerRect = container.getBoundingClientRect()
+      centers = items.map(item => {
         const rect = item.getBoundingClientRect()
-        const centerX = rect.x + rect.width / 2
-        const centerY = rect.y + rect.height / 2
-
-        const b = pointer.x - centerX
-        const a = pointer.y - centerY
-        const c = Math.sqrt(a * a + b * b) || 1
-        const r = ((Math.acos(b / c) * 180) / Math.PI) * (pointer.y > centerY ? 1 : -1)
-
-        item.style.setProperty('--rotate', `${r}deg`)
+        return {
+          x: rect.left - containerRect.left + rect.width / 2,
+          y: rect.top - containerRect.top + rect.height / 2
+        }
       })
     }
 
-    window.addEventListener('pointermove', onPointerMove)
+    const update = () => {
+      frameId = null
+      if (!isActive || !pointer) return
+      const containerRect = container.getBoundingClientRect()
+      const pointerX = pointer.x - containerRect.left
+      const pointerY = pointer.y - containerRect.top
 
-    if (items.length) {
-      const middleIndex = Math.floor(items.length / 2)
-      const rect = items[middleIndex].getBoundingClientRect()
-      onPointerMove({ x: rect.x, y: rect.y })
+      items.forEach((item, index) => {
+        const { x, y } = centers[index]
+        const angle = Math.atan2(pointerY - y, pointerX - x) * (180 / Math.PI)
+        item.style.setProperty('--rotate', `${angle}deg`)
+      })
     }
 
+    const scheduleUpdate = event => {
+      pointer = { x: event.clientX, y: event.clientY }
+      if (frameId === null) frameId = requestAnimationFrame(update)
+    }
+
+    const setActive = active => {
+      if (isActive === active) return
+      isActive = active
+      if (active) {
+        updateCenters()
+        window.addEventListener('pointermove', scheduleUpdate, { passive: true })
+      } else {
+        window.removeEventListener('pointermove', scheduleUpdate)
+        if (frameId !== null) {
+          cancelAnimationFrame(frameId)
+          frameId = null
+        }
+      }
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      setActive(entry.isIntersecting && !document.hidden)
+    })
+    observer.observe(container)
+
+    const resizeObserver = new ResizeObserver(updateCenters)
+    resizeObserver.observe(container)
+    const handleVisibilityChange = () => setActive(!document.hidden && container.getBoundingClientRect().bottom > 0 && container.getBoundingClientRect().top < window.innerHeight)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
-      window.removeEventListener('pointermove', onPointerMove)
+      observer.disconnect()
+      resizeObserver.disconnect()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pointermove', scheduleUpdate)
+      if (frameId !== null) cancelAnimationFrame(frameId)
     }
   }, [rows, columns])
 

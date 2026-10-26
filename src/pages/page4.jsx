@@ -51,13 +51,13 @@ const contactItems = [
 
 const Page4 = () => {
   return (
-    <div id='contact' className='relative min-h-screen overflow-hidden bg-[#050816] px-5 py-10 text-white'>
+    <div id='contact' className='relative min-h-screen overflow-hidden bg-[#050816] px-4 py-8 text-white sm:px-5 sm:py-10'>
       <div className='absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.25),_transparent_50%),radial-gradient(circle_at_bottom,_rgba(168,85,247,0.22),_transparent_45%)]' />
       <div className='absolute inset-0 opacity-80'>
         <MagnetLines
-          rows={9}
-          columns={9}
-          containerSize='70vmin'
+          rows={7}
+          columns={7}
+          containerSize='min(70vmin, 520px)'
           lineColor='rgba(255,255,255,0.72)'
           lineWidth='0.9vmin'
           lineHeight='4.8vmin'
@@ -78,7 +78,7 @@ const Page4 = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.35 }}
           transition={{ duration: 0.7, ease: 'easeOut' }}
-          className='w-full rounded-[2rem] border border-white/10 bg-slate-950/30 p-6 shadow-[0_30px_100px_rgba(15,23,42,0.55)] backdrop-blur-md md:backdrop-blur-xl md:p-10'
+          className='w-full min-w-0 rounded-[2rem] border border-white/10 bg-slate-950/30 p-5 shadow-[0_30px_100px_rgba(15,23,42,0.55)] backdrop-blur-md md:backdrop-blur-xl sm:p-8 md:p-10'
         >
           <div className='text-center'>
             <motion.p
@@ -96,7 +96,7 @@ const Page4 = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.5 }}
               transition={{ duration: 0.7, ease: 'easeOut' }}
-              className='mt-4 text-4xl font-black leading-tight tracking-[-0.06em] md:text-6xl'
+              className='mt-4 text-[clamp(2rem,8vw,3.75rem)] font-black leading-tight tracking-[-0.06em]'
             >
               {['Let’s', 'Connect.'].map((word, index) => (
                 <motion.span

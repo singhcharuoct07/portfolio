@@ -87,6 +87,9 @@
   font-weight: 500;
   line-height: 1;
   overflow: visible;
+  min-height: 44px;
+  min-width: 44px;
+  justify-content: center;
 }
 
 .sm-toggle:focus-visible {
@@ -258,7 +261,7 @@
   position: relative;
   color: #000;
   font-weight: 600;
-  font-size: 3.5rem;
+  font-size: clamp(2rem, 8vw, 3.5rem);
   cursor: pointer;
   line-height: 1;
   letter-spacing: -2px;
@@ -272,6 +275,8 @@
 .sm-panel-item:hover {
   color: var(--sm-accent, #5227ff);
 }
+
+.sm-panel-item, .sm-socials-link { min-height: 44px; align-content: center; }
 
 .sm-panel-itemLabel {
   display: inline-block;
@@ -308,6 +313,15 @@
   .staggered-menu-wrapper[data-open] .sm-logo-img {
     filter: invert(100%);
   }
+
+  .portfolio-menu .staggered-menu-header {
+    left: 0.75rem;
+    transform: none;
+    width: calc(100% - 1.5rem);
+    padding: 0.55rem 0.65rem 0.55rem 0.85rem;
+  }
+
+  .staggered-menu-panel { padding: 5.5rem 1.25rem 1.5rem; }
 }
 
 @media (max-width: 640px) {

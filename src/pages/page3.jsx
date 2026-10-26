@@ -39,7 +39,7 @@ const techLogos = [
 const Page3 = () => {
   return (
 
-    <div id='project' className='min-h-screen bg-[#f7f4ef] px-5 py-16 text-slate-900'>
+    <div id='project' className='min-h-screen overflow-hidden bg-[#f7f4ef] px-4 py-14 text-slate-900 sm:px-5 sm:py-16'>
       <div className='mb-6 text-center'>
         <FoldText
           text='Project'
@@ -69,10 +69,10 @@ const Page3 = () => {
           ]}
           label='Project Folder'
           sublabel='1 item'
-          trigger='hover'
+          trigger='click'
           closeOnSelect
-          physics
-          drift={0.5}
+          physics={false}
+          drift={0}
           onSelect={(value, index) => console.log(value, index)}
           folderColor='#f0e43e'
           frontColor='#f5d521'
@@ -96,7 +96,7 @@ const Page3 = () => {
         <div className='w-full min-w-0 max-w-full'>
           <LogoLoop
             logos={techLogos}
-            speed={100}
+            speed={35}
             direction='left'
             logoHeight={30}
             gap={30}

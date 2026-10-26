@@ -18,6 +18,8 @@ export default function MagnetLines({
     const container = containerRef.current
     if (!container) return
 
+    if (window.matchMedia('(hover: none), (prefers-reduced-motion: reduce)').matches) return
+
     const items = Array.from(container.querySelectorAll('span'))
     let centers = []
     let pointer = null

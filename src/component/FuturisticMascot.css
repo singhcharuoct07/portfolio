@@ -1,0 +1,108 @@
+.robot-mascot {
+  display: block;
+  width: min(100%, clamp(17rem, 36vw, 30rem));
+  height: auto;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.robot-head {
+  transform-box: view-box;
+  transform-origin: 180px 180px;
+  transition: transform 180ms ease-out;
+}
+
+.robot-eye-white {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 300ms cubic-bezier(.2, .7, .2, 1);
+}
+
+.robot-eyelid {
+  transform-box: fill-box;
+  transform-origin: center top;
+  transform: scaleY(0);
+  transition: transform 120ms ease-in;
+}
+
+.robot-mascot[data-blink='true'] .robot-eyelid {
+  transform: scaleY(1);
+}
+
+.robot-mascot[data-expression='wink'] .robot-eye-right .robot-eyelid {
+  transform: scaleY(1);
+  transition-duration: 100ms;
+}
+
+.robot-mascot[data-expression='wink'] .robot-eye-right .robot-eye-white,
+.robot-mascot[data-expression='wink'] .robot-eye-right > g {
+  opacity: 0;
+}
+
+.robot-eye-smile {
+  fill: none;
+  stroke: #8c70e6;
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+
+.robot-mascot[data-expression='happy'] .robot-eye-smile,
+.robot-mascot[data-expression='friendly'] .robot-eye-smile,
+.robot-mascot[data-expression='excited'] .robot-eye-smile,
+.robot-mascot[data-expression='confident'] .robot-eye-smile,
+.robot-mascot[data-expression='wink'] .robot-eye-left .robot-eye-smile {
+  opacity: 1;
+}
+
+.robot-brow { transition: transform 250ms ease-out; }
+.robot-brow-left { transform-origin: 145px 158px; }
+.robot-brow-right { transform-origin: 220px 158px; }
+
+.robot-mouth { opacity: 0; transition: opacity 220ms ease-out; }
+.robot-mascot[data-expression='idle'] .robot-mouth-neutral,
+.robot-mascot[data-expression='curious'] .robot-mouth-neutral,
+.robot-mascot[data-expression='interested'] .robot-mouth-neutral { opacity: 1; }
+.robot-mascot[data-expression='thinking'] .robot-mouth-thoughtful { opacity: 1; }
+.robot-mascot[data-expression='happy'] .robot-mouth-happy,
+.robot-mascot[data-expression='excited'] .robot-mouth-happy,
+.robot-mascot[data-expression='wink'] .robot-mouth-happy { opacity: 1; }
+.robot-mascot[data-expression='friendly'] .robot-mouth-friendly { opacity: 1; }
+.robot-mascot[data-expression='confident'] .robot-mouth-confident { opacity: 1; }
+
+.robot-blush { opacity: 0.22; transition: opacity 300ms ease-out; }
+.robot-mascot[data-expression='excited'] .robot-blush,
+.robot-mascot[data-expression='friendly'] .robot-blush,
+.robot-mascot[data-expression='wink'] .robot-blush { opacity: 0.8; }
+.robot-mascot[data-expression='curious'] .robot-brow,
+.robot-mascot[data-expression='interested'] .robot-brow { transform: translateY(-5px); }
+.robot-mascot[data-expression='thinking'] .robot-brow { transform: translateY(3px) scaleX(0.92); }
+.robot-mascot[data-expression='confident'] .robot-brow-right { transform: translateY(-2px); }
+.robot-mascot[data-expression='excited'] .robot-eye-white { transform: scale(1.08); }
+.robot-mascot[data-expression='curious'] .robot-eye-white,
+.robot-mascot[data-expression='interested'] .robot-eye-white { transform: scale(1.04); }
+
+@media (hover: none) and (pointer: coarse) {
+  .robot-mascot { animation: robot-idle 5.2s ease-in-out infinite; }
+}
+
+@media (max-width: 680px) {
+  .robot-mascot { width: min(100%, clamp(13rem, 54vw, 19rem)); }
+}
+
+@keyframes robot-idle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .robot-head,
+  .robot-eye-white,
+  .robot-eyelid,
+  .robot-brow,
+  .robot-eye-smile,
+  .robot-mouth,
+  .robot-blush { transition: none; }
+  .robot-mascot { animation: none; }
+}

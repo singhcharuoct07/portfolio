@@ -3,7 +3,7 @@ import ShinyText from '../component/ShinyText'
 
 const Page2 = () => {
   return (
-    <div id='about' className='min-h-screen bg-[#0f1115] px-5 py-16 text-white'>
+    <div id='about' className='min-h-screen bg-[#0f1115] px-4 py-14 text-white sm:px-5 sm:py-16'>
       <div className='mx-auto max-w-6xl'>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -23,7 +23,7 @@ const Page2 = () => {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.7, ease: 'easeOut' }}
           >
-            <h2 className='text-4xl font-black leading-tight tracking-[-0.06em] md:text-6xl'>
+            <h2 className='text-[clamp(2rem,7vw,3.75rem)] font-black leading-tight tracking-[-0.06em]'>
               <ShinyText
                 text='I create polished digital experiences that feel effortless.'
                 color='#dfe7ff'

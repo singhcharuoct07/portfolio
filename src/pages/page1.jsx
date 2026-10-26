@@ -1,54 +1,41 @@
-import { useRef } from 'react'
 import Header from '../component/Header'
-import VariableProximity from '../component/VariableProximity'
-import Particles from '../component/Particles'
+import FuturisticMascot from '../component/FuturisticMascot'
+import { FaGithub, FaLinkedinIn } from 'react-icons/fa'
+import './page1.css'
 
-const Page1 = () => {
-  const containerRef = useRef(null)
+const Page1 = () => (
+  <section id='home' className='home-hero'>
+    <Header />
 
-  return (
-    <div id='home' className='h-screen bg-white px-5 py-5 p-5'>
-      <div ref={containerRef} className='relative h-full w-full overflow-hidden rounded-[2rem]'>
-        <div className='absolute inset-0 bg-[#050816]' />
-        <div className='absolute inset-0'>
-          <Particles
-            particleColors={['#ffffff']}
-            particleCount={180}
-            particleSpread={10}
-            speed={0.12}
-            particleBaseSize={120}
-            moveParticlesOnHover={true}
-            alphaParticles={false}
-            disableRotation={false}
-            particleHoverFactor={1.2}
-          />
+    <div className='home-hero__layout'>
+      <div className='home-hero__content'>
+        <p className='home-hero__eyebrow'>HII, I'M</p>
+        <h1 className='home-hero__title'>
+          Charu Singh
+        </h1>
+        
+
+        <div className='home-hero__actions'>
+          <a className='home-hero__button home-hero__button--primary' href='#project'>View My Work</a>
+          <a className='home-hero__button home-hero__button--secondary' href='#contact'>Get In Touch</a>
+          <a className='home-hero__button home-hero__button--resume' href='/resume11%20(1).pdf' target='_blank' rel='noreferrer'>Resume</a>
         </div>
-        <div className='absolute inset-0 bg-black/20' />
-        <Header />
 
-        <div className='absolute bottom-16 left-4 right-4 z-10 w-auto sm:bottom-20 sm:left-8 sm:right-auto sm:w-[min(90%,11000px)] md:left-20'>
-          <div className='text-3xl font-black tracking-tight text-white md:text-5xl'>Hi, I am</div>
-
-          <div className='mt-2 text-[clamp(3rem,6vw,8rem)] leading-[0.9] tracking-[-0.08em] text-white'>
-            <VariableProximity
-              label='Charu Singh'
-              className='inline-block font-black text-white'
-              fromFontVariationSettings="'wght' 400, 'opsz' 9"
-              toFontVariationSettings="'wght' 1000, 'opsz' 40"
-              containerRef={containerRef}
-              radius={160}
-              falloff='linear'
-            />
-          </div>
-
-          <div className='mt-3 flex items-center bg-none justify-between gap-4'>
-            
-
-          </div>
+        <div className='home-hero__socials' aria-label='Social links'>
+          <a href='https://github.com/singhcharuoct07' target='_blank' rel='noreferrer' aria-label='GitHub profile'>
+            <FaGithub aria-hidden='true' />
+          </a>
+          <a href='https://www.linkedin.com/in/charu-singh-0755a12a4/' target='_blank' rel='noreferrer' aria-label='LinkedIn profile'>
+            <FaLinkedinIn aria-hidden='true' />
+          </a>
         </div>
       </div>
+
+      <div className='home-hero__mascot-wrap'>
+        <FuturisticMascot />
+      </div>
     </div>
-  )
-}
+  </section>
+)
 
 export default Page1

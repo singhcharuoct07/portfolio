@@ -18,7 +18,7 @@ const Page1 = () => (
         <div className='home-hero__actions'>
           <a className='home-hero__button home-hero__button--primary' href='#project'>View My Work</a>
           <a className='home-hero__button home-hero__button--secondary' href='#contact'>Get In Touch</a>
-          <a className='home-hero__button home-hero__button--resume' href='/resume11%20(1).pdf' target='_blank' rel='noreferrer'>Resume</a>
+          <a className='home-hero__button home-hero__button--resume' href='/resume12.pdf' target='_blank' rel='noreferrer'>Resume</a>
         </div>
 
         <div className='home-hero__socials' aria-label='Social links'>

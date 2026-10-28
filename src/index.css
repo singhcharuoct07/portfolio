@@ -7,8 +7,8 @@ body,
   max-width: 100%;
 }
 
-html { scroll-behavior: smooth; overflow-x: clip; -webkit-text-size-adjust: 100%; }
-body { min-width: 320px; margin: 0; overflow-x: clip; }
+html { scroll-behavior: smooth; overflow-x: clip; overscroll-behavior-y: none; -webkit-text-size-adjust: 100%; }
+body { min-width: 320px; margin: 0; overflow-x: clip; overscroll-behavior-y: none; }
 *, *::before, *::after { box-sizing: border-box; }
 img, svg, video, canvas { max-width: 100%; }
 button, a { -webkit-tap-highlight-color: transparent; }
